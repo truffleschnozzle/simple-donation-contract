@@ -25,7 +25,7 @@ contract Donation {
         beneficiary = _beneficiary;
     }
 
-    function setBeneficiaryNull() internal {
+    function closeDonations() internal {
         require(address(this).balance == 0, "Fundraising in progress");
         beneficiary = address(0);
         administrator = address(0);
@@ -35,22 +35,24 @@ contract Donation {
         require(beneficiary != address(0), "No fundraiser in progress");
         uint adminFee = msg.value * 1 / 100;
         (bool sent, ) = payable(administrator).call{value: adminFee}("");
-        fund += (msg.value - adminFee);
         require(sent == true, "Transfer failed");
+        fund += (msg.value - adminFee);
     }
 
     function withdraw() external {
         require(msg.sender == beneficiary, "Only beneficiary can withdraw");
         (bool sent, ) = payable(beneficiary).call{value: fund}("");
         require(sent == true, "Transfer failed");
-        setBeneficiaryNull();
+        fund = 0;
+        closeDonations();
     }
 
     receive() external payable {
         require(beneficiary != address(0), "No fundraiser in progress");
-        uint donationAmount = msg.value * 1 / 100;
-        (bool sent, ) = payable(administrator).call{value: donationAmount}("");
+        uint transactionFee = msg.value * 1 / 100;
+        (bool sent, ) = payable(administrator).call{value: transactionFee}("");
         require(sent == true, "Transfer failed");
+        fund += (msg.value - transactionFee);
     }
     // function blowmeup() is set for development purposes only
     function blowmeup() external {
